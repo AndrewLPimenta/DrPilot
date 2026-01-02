@@ -63,12 +63,19 @@ export function ChatBot() {
         throw new Error(data.error || data.message || "Erro ao enviar mensagem")
       }
 
+      // Garante que o texto seja sempre string
+      let aiText: string
+      if (Array.isArray(data.data?.response)) {
+        aiText = data.data.response.join(" ")
+      } else if (typeof data.data?.response === "object" && data.data?.response !== null) {
+        aiText = JSON.stringify(data.data.response)
+      } else {
+        aiText = String(data.data?.response || "Desculpe, não consegui processar sua pergunta.")
+      }
+
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text:
-          data.data?.response ||
-          data.message ||
-          "Desculpe, não consegui processar sua pergunta.",
+        text: aiText,
         sender: "ai",
         timestamp: new Date(),
       }
@@ -130,8 +137,7 @@ export function ChatBot() {
                 Bem-vindo ao Dr Pilot
               </h2>
               <p className="text-muted-foreground max-w-md mx-auto">
-                Seu assistente de IA para Medicina. 
-                Bons estudos!
+                Seu assistente de IA para Medicina. Bons estudos!
               </p>
             </div>
           ) : (
@@ -165,7 +171,7 @@ export function ChatBot() {
               <Card className="bg-accent/20 text-foreground border-accent/30 px-4 py-3">
                 <div className="flex items-center gap-2">
                   <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                  <p className="text-sm"></p>
+                  <p className="text-sm">IA está digitando...</p>
                 </div>
               </Card>
             </div>
