@@ -49,16 +49,16 @@ export default function RegisterRoute() {
       // Título personalizado (opcional)
       title={
         <>
-          <span className="font-light">Junte-se à </span>
+          <span className="font-light">Crie </span>
           <span className="font-semibold bg-gradient-to-r from-violet-400 to-green-400 bg-clip-text text-transparent">
-            Revolução Médica
+            sua Conta
           </span>
         </>
       }
       
       // Descrição personalizada
       description="Cadastre-se gratuitamente e tenha acesso a ferramentas de IA especializadas para educação médica."
-      
+
       // Imagem de fundo (hero)
       heroImageSrc="https://images.unsplash.com/photo-1559757148-5c350d0d3c56?ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80"
       
@@ -68,10 +68,7 @@ export default function RegisterRoute() {
       // Callbacks
       onGoogleSignIn={handleGoogleSignIn}
       onLogin={handleLogin}
-      
-      // Você também pode adicionar outras props se necessário:
-      // onResetPassword={() => console.log("Reset password")}
-      // onCreateAccount={() => console.log("Create account")}
+
     />
   )
 }

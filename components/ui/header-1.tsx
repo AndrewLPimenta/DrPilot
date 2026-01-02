@@ -51,7 +51,7 @@ export function Header() {
 					{isLogged ? (
 						<>
 							<Link href="/profile">
-								<Button variant="outline">Perfil</Button>
+								<Button variant="outline">Conta</Button>
 							</Link>
 							<Button className='bg-primary/50' variant="destructive" onClick={logout}>
             <LogOut className="h-4 w-4 mr-2" />

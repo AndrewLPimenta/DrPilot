@@ -5,7 +5,7 @@ export default function LoginPage() {
   // Dados de exemplo para os testemunhos
   const testimonials: Testimonial[] = [
     {
-      avatarSrc: "https://images.unsplash.com/photo-1494790108755-2616b786d4d9?w=100&h=100&fit=crop&crop=face",
+      avatarSrc: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR4fSyuS3vXwCxfScTbbkmap8KL634-7diq8w&s",
       name: "Maria Silva",
       handle: "@mariasilva",
       text: "O Dr Pilot revolucionou a forma como gerencio minha clínica. Economizei 10 horas semanais!"
@@ -69,19 +69,6 @@ export default function LoginPage() {
         onCreateAccount={handleCreateAccount}
       />
 
-      {/* Footer opcional */}
-      {/* <footer className="relative bottom-0 left-0 right-0 p-6 text-center">
-        <p className="text-xs text-muted-foreground">
-          © 2024 Dr Pilot. Todos os direitos reservados.{" "}
-          <a href="#" className="hover:text-foreground transition-colors">
-            Política de Privacidade
-          </a>{" "}
-          •{" "}
-          <a href="#" className="hover:text-foreground transition-colors">
-            Termos de Uso
-          </a>
-        </p>
-      </footer> */}
     </div>
   );
 }

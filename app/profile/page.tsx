@@ -1,453 +1,431 @@
 "use client"
 
-import { useEffect, useCallback, useState } from "react"
+import type React from "react"
+
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import { useUserProfile } from "@/hooks/useUserProfile"
-import { ProfileHeader } from "@/components/profile/ProfileHeader"
-import { ProfileForm } from "@/components/profile/ProfileForm"
-import { AccountInfo } from "@/components/profile/AccountInfo"
-import { Loader2, AlertCircle, ArrowLeft, Heart, Brain, Shield, Activity, X } from "lucide-react"
-import Link from "next/link"
+import { Loader2, AlertCircle, User, Shield, CreditCard, Zap, ChevronRight } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { PageLayout } from "@/components/page-layout";
-import { ProtectedRoute } from "@/components/auth/protected-route";
-import { motion, AnimatePresence } from "framer-motion";
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { PageLayout } from "@/components/page-layout"
+import { ProtectedRoute } from "@/components/auth/protected-route"
+import { Badge } from "@/components/ui/badge"
+import { Separator } from "@/components/ui/separator"
+import { Progress } from "@/components/ui/progress"
 
 export default function ProfilePage() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
-  const {
-    profile,
-    loading: profileLoading,
-    error,
-    updateProfile,
-    updatePassword,
-  } = useUserProfile()
+  const { profile, loading: profileLoading, error, updateProfile, updatePassword } = useUserProfile()
 
-  // Estados para controlar os popups
-  const [showProfilePopup, setShowProfilePopup] = useState(false);
-  const [showAccountPopup, setShowAccountPopup] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [successMessage, setSuccessMessage] = useState("")
+  const [errorMessage, setErrorMessage] = useState("")
 
-  // Handler para atualizar perfil
-  const handleUpdate = useCallback(async (data: any) => {
-    try {
-      await updateProfile(data)
-      // Se necessário, adicionar lógica adicional após atualização
-    } catch (err) {
-      console.error("Erro ao atualizar perfil:", err)
-      throw err
-    }
-  }, [updateProfile])
+  // Profile form state
+  const [profileData, setProfileData] = useState({
+    name: "",
+    email: "",
+  })
 
-  // Handler para alterar senha
-  const handlePasswordChange = useCallback(async (currentPassword: string, newPassword: string) => {
-    try {
-      await updatePassword(currentPassword, newPassword)
-      // Se necessário, adicionar lógica adicional após alterar senha
-    } catch (err) {
-      console.error("Erro ao alterar senha:", err)
-      throw err
-    }
-  }, [updatePassword])
+  // Password form state
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  })
 
-  // Redireciona se não estiver autenticado
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/login")
     }
   }, [user, authLoading, router])
 
+  useEffect(() => {
+    if (profile) {
+      setProfileData({
+        name: profile.name || "",
+        email: profile.email || "",
+      })
+    }
+  }, [profile])
+
+  const handleProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setIsUpdating(true)
+    setErrorMessage("")
+    setSuccessMessage("")
+
+    try {
+      await updateProfile(profileData)
+      setSuccessMessage("Perfil atualizado com sucesso!")
+      setTimeout(() => setSuccessMessage(""), 3000)
+    } catch (err: any) {
+      setErrorMessage(err.message || "Erro ao atualizar perfil")
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
+  const handlePasswordUpdate = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setErrorMessage("As senhas não coincidem")
+      return
+    }
+
+    setIsUpdating(true)
+    setErrorMessage("")
+    setSuccessMessage("")
+
+    try {
+      await updatePassword(passwordData.currentPassword, passwordData.newPassword)
+      setSuccessMessage("Senha alterada com sucesso!")
+      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
+      setTimeout(() => setSuccessMessage(""), 3000)
+    } catch (err: any) {
+      setErrorMessage(err.message || "Erro ao alterar senha")
+    } finally {
+      setIsUpdating(false)
+    }
+  }
+
   if (authLoading || profileLoading) {
     return (
       <PageLayout>
-        <div className="min-h-screen flex items-center justify-center bg-background">
-          <Card className="border-border/50 bg-card/40 backdrop-blur-sm shadow-lg">
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <Loader2 className="w-12 h-12 text-primary animate-spin mx-auto mb-4" />
-                <p className="text-muted-foreground">Carregando perfil...</p>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-primary animate-spin" />
         </div>
       </PageLayout>
     )
   }
 
-  if (!user) {
-    return null
-  }
+  if (!user || !profile) return null
 
-  if (error && !profile) {
-    return (
-      <PageLayout>
-        <div className="min-h-screen flex items-center justify-center bg-background px-4">
-          <Card className="border-border/50 bg-card/40 backdrop-blur-sm shadow-lg max-w-md w-full">
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
-                <h2 className="text-xl font-semibold text-foreground mb-2">Erro ao carregar perfil</h2>
-                <p className="text-muted-foreground mb-6">{error}</p>
-                <Button
-                  onClick={() => window.location.reload()}
-                  className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
-                >
-                  Tentar novamente
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </PageLayout>
-    )
-  }
-
-  if (!profile) {
-    return (
-      <PageLayout>
-        <div className="min-h-screen flex items-center justify-center bg-background">
-          <Card className="border-border/50 bg-card/40 backdrop-blur-sm shadow-lg">
-            <CardContent className="pt-6">
-              <div className="text-center">
-                <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-                <p className="text-muted-foreground">Perfil não encontrado</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </PageLayout>
-    )
-  }
+  const usagePercentage = profile.subscription === "free" ? (profile.queries_count / profile.queries_limit) * 100 : 0
 
   return (
     <ProtectedRoute>
       <PageLayout>
-        <div className="min-h-screen bg-background relative">
-          {/* Header */}
-          <div className="bg-card/50 border-b border-border">
-            <div className="container mx-auto px-4 py-4">
+        <div className="min-h-screen bg-muted/30">
+          <div className="border-b bg-background">
+            <div className="container mx-auto px-6 py-4">
               <div className="flex items-center justify-between">
-               
-                <div className="flex items-center gap-2">
-                  <Heart className="w-6 h-6 text-primary" />
-                  <h1 className="text-2xl font-bold text-foreground">Meu Perfil</h1>
-                </div>
-                <div className="w-24"></div>
+                <h1 className="text-lg font-medium">Minha Conta</h1>
+                <Badge variant="secondary" className="text-xs">
+                  {profile.subscription === "free" ? "Free" : "Premium"}
+                </Badge>
               </div>
             </div>
           </div>
 
-          {/* Conteúdo */}
-          <div className="container mx-auto px-4 py-8">
-            <div className="max-w-6xl mx-auto space-y-8">
-              {/* Breadcrumb */}
-              
-
-              {/* Alertas */}
-              {error && (
-                <Alert variant="destructive" className="bg-destructive/10 border-destructive/30">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
+          <div className="container mx-auto px-6 py-8">
+            <div className="max-w-5xl mx-auto">
+              {successMessage && (
+                <Alert className="mb-6 border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-900">
+                  <AlertDescription className="text-green-800 dark:text-green-200">{successMessage}</AlertDescription>
                 </Alert>
               )}
 
-              {/* Conteúdo principal */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Coluna esquerda - 2/3 */}
-                <div className="lg:col-span-2 space-y-8">
-                  <Card className="border-border/50 bg-card/40 backdrop-blur-sm shadow-lg">
-                    <CardContent className="pt-6">
-                      <ProfileHeader 
-                        profile={profile} 
-                        onEditProfile={() => setShowProfilePopup(true)}
-                        onAccountInfo={() => setShowAccountPopup(true)}
-                      />
+              {errorMessage && (
+                <Alert variant="destructive" className="mb-6">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{errorMessage}</AlertDescription>
+                </Alert>
+              )}
+
+              <Tabs defaultValue="general" className="space-y-6">
+                <TabsList className="bg-muted/50">
+                  <TabsTrigger value="general" className="gap-2">
+                    <User className="w-4 h-4" />
+                    Geral
+                  </TabsTrigger>
+                  <TabsTrigger value="security" className="gap-2">
+                    <Shield className="w-4 h-4" />
+                    Segurança
+                  </TabsTrigger>
+                  <TabsTrigger value="usage" className="gap-2">
+                    <Zap className="w-4 h-4" />
+                    Uso
+                  </TabsTrigger>
+                  <TabsTrigger value="billing" className="gap-2">
+                    <CreditCard className="w-4 h-4" />
+                    Plano
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="general" className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base font-medium">Informações do Perfil</CardTitle>
+                      <CardDescription className="text-sm">Atualize suas informações pessoais</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <form onSubmit={handleProfileUpdate} className="space-y-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="name" className="text-sm font-normal">
+                            Nome completo
+                          </Label>
+                          <Input
+                            id="name"
+                            value={profileData.name}
+                            onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                            className="max-w-md"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="email" className="text-sm font-normal">
+                            Email
+                          </Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={profileData.email}
+                            onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                            className="max-w-md"
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Este é o email usado para login e notificações
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <Button type="submit" disabled={isUpdating} size="sm">
+                            {isUpdating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                            Salvar alterações
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setProfileData({ name: profile.name || "", email: profile.email || "" })}
+                          >
+                            Cancelar
+                          </Button>
+                        </div>
+                      </form>
                     </CardContent>
                   </Card>
-                  
 
-                  
-                  {/* <Card className="border-border/50 bg-card/40 backdrop-blur-sm shadow-lg">
+                  <Card>
                     <CardHeader>
-                      <CardTitle>Informações da Conta</CardTitle>
-                      <CardDescription>Gerencie as configurações da sua conta</CardDescription>
+                      <CardTitle className="text-base font-medium">Informações da Conta</CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <AccountInfo 
-                        profile={profile} 
-                        onPasswordChange={handlePasswordChange}
-                      />
-                    </CardContent>
-                  </Card> */}
-                </div>
-
-                {/* Coluna direita - 1/3 */}
-                <div className="space-y-8">
-                  {/* Estatísticas */}
-                  <Card className="border-border/50 bg-card/40 backdrop-blur-sm shadow-lg">
-                    <CardHeader className="pb-4">
-                      <div className="flex items-center gap-2">
-                        <Activity className="w-5 h-5 text-primary" />
-                        <CardTitle className="text-lg">Estatísticas</CardTitle>
-                      </div>
-                      <CardDescription>Suas consultas e uso</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-6">
-                        <div>
-                          <p className="text-sm text-muted-foreground mb-1">Total de Consultas</p>
-                          <p className="text-3xl font-bold text-foreground">{profile.queries_count}</p>
+                    <CardContent className="space-y-4">
+                      <div className="flex items-center justify-between py-2">
+                        <div className="space-y-0.5">
+                          <p className="text-sm font-medium">ID da Conta</p>
+                          <p className="text-xs text-muted-foreground">{user.id}</p>
                         </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground mb-1">Limite Mensal</p>
-                          <p className="text-3xl font-bold text-foreground">
+                      </div>
+                      <Separator />
+                      <div className="flex items-center justify-between py-2">
+                        <div className="space-y-0.5">
+                          <p className="text-sm font-medium">Data de Criação</p>
+                          <p className="text-xs text-muted-foreground">
+                            {new Date(profile.created_at || profile.updated_at).toLocaleDateString("pt-BR", {
+                              day: "numeric",
+                              month: "long",
+                              year: "numeric",
+                            })}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="security" className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base font-medium">Alterar Senha</CardTitle>
+                      <CardDescription className="text-sm">
+                        Mantenha sua conta segura com uma senha forte
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <form onSubmit={handlePasswordUpdate} className="space-y-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="currentPassword" className="text-sm font-normal">
+                            Senha atual
+                          </Label>
+                          <Input
+                            id="currentPassword"
+                            type="password"
+                            value={passwordData.currentPassword}
+                            onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                            className="max-w-md"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="newPassword" className="text-sm font-normal">
+                            Nova senha
+                          </Label>
+                          <Input
+                            id="newPassword"
+                            type="password"
+                            value={passwordData.newPassword}
+                            onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                            className="max-w-md"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="confirmPassword" className="text-sm font-normal">
+                            Confirmar nova senha
+                          </Label>
+                          <Input
+                            id="confirmPassword"
+                            type="password"
+                            value={passwordData.confirmPassword}
+                            onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
+                            className="max-w-md"
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          <Button type="submit" disabled={isUpdating} size="sm">
+                            {isUpdating && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                            Atualizar senha
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() =>
+                              setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
+                            }
+                          >
+                            Cancelar
+                          </Button>
+                        </div>
+                      </form>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+
+                <TabsContent value="usage" className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base font-medium">Uso de Consultas</CardTitle>
+                      <CardDescription className="text-sm">
+                        {profile.subscription === "free"
+                          ? "Acompanhe seu uso mensal de consultas"
+                          : "Você tem acesso ilimitado a consultas"}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-6">
+                      <div className="grid grid-cols-3 gap-6">
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Utilizadas</p>
+                          <p className="text-2xl font-semibold">{profile.queries_count}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Limite</p>
+                          <p className="text-2xl font-semibold">
                             {profile.subscription === "free" ? profile.queries_limit : "∞"}
                           </p>
                         </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground mb-1">Disponíveis</p>
-                          <p className="text-3xl font-bold text-foreground">
-                            {profile.subscription === "free" 
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">Disponíveis</p>
+                          <p className="text-2xl font-semibold text-primary">
+                            {profile.subscription === "free"
                               ? Math.max(0, profile.queries_limit - profile.queries_count)
-                              : "∞"
-                            }
+                              : "∞"}
                           </p>
                         </div>
                       </div>
+
+                      {profile.subscription === "free" && (
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Progresso</span>
+                            <span className="text-sm font-medium">{usagePercentage.toFixed(0)}%</span>
+                          </div>
+                          <Progress value={usagePercentage} className="h-2" />
+                          {usagePercentage > 80 && (
+                            <Alert className="mt-4">
+                              <AlertCircle className="h-4 w-4" />
+                              <AlertDescription className="text-sm">
+                                Você está próximo do seu limite. Considere fazer upgrade para continuar usando.
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
+                </TabsContent>
 
-                  {/* Ações Rápidas */}
-                  <Card className="border-border/50 bg-card/40 backdrop-blur-sm shadow-lg">
-                    <CardHeader className="pb-4">
-                      <div className="flex items-center gap-2">
-                        <Brain className="w-5 h-5 text-secondary" />
-                        <CardTitle className="text-lg">Ações Rápidas</CardTitle>
-                      </div>
-                      <CardDescription>Acesso rápido às funcionalidades</CardDescription>
+                <TabsContent value="billing" className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base font-medium">Plano Atual</CardTitle>
+                      <CardDescription className="text-sm">Gerencie sua assinatura</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        <Button
-                          onClick={() => router.push("/chatbot")}
-                          className="w-full justify-start bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20"
-                          variant="ghost"
-                        >
-                          Nova Consulta
-                        </Button>
-                        
-                        <Button
-                          onClick={() => router.push("/history")}
-                          className="w-full justify-start bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20"
-                          variant="ghost"
-                        >
-                          Histórico de Consultas
-                        </Button>
-                        
+                    <CardContent className="space-y-6">
+                      <div className="flex items-start justify-between p-4 border rounded-lg">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold">
+                              {profile.subscription === "free" ? "Plano Free" : "Plano Premium"}
+                            </p>
+                            <Badge variant="secondary" className="text-xs">
+                              {profile.subscription === "free" ? "Gratuito" : "Pago"}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {profile.subscription === "free"
+                              ? `${profile.queries_limit} consultas por mês`
+                              : "Consultas ilimitadas"}
+                          </p>
+                        </div>
                         {profile.subscription === "free" && (
-                          <Button
-                            onClick={() => router.push("/plans")}
-                            className="w-full justify-start bg-secondary/10 hover:bg-secondary/20 text-secondary border border-secondary/20"
-                            variant="ghost"
-                          >
+                          <Button size="sm" onClick={() => router.push("/plans")}>
+                            <Zap className="w-4 h-4 mr-2" />
                             Fazer Upgrade
                           </Button>
                         )}
-                        
-                        <Button
-                          onClick={() => {
-                            localStorage.clear()
-                            router.push("/login")
-                          }}
-                          className="w-full justify-start bg-muted hover:bg-muted/80 text-muted-foreground"
-                          variant="ghost"
-                        >
-                          Sair em Outros Dispositivos
-                        </Button>
                       </div>
+
+                      {profile.subscription === "free" && (
+                        <div className="space-y-3">
+                          <Separator />
+                          <div className="space-y-3">
+                            <p className="text-sm font-medium">Benefícios do Premium</p>
+                            <div className="space-y-2">
+                              {[
+                                "Consultas ilimitadas",
+                                "Suporte prioritário",
+                                "Acesso a recursos avançados",
+                                "Histórico completo",
+                              ].map((benefit, index) => (
+                                <div key={index} className="flex items-center gap-2 text-sm text-muted-foreground">
+                                  <ChevronRight className="w-4 h-4" />
+                                  {benefit}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
-
-                  {/* Informações do Sistema */}
-                  {/* <Card className="border-border/50 bg-card/40 backdrop-blur-sm shadow-lg">
-                    <CardHeader className="pb-4">
-                      <div className="flex items-center gap-2">
-                        <Shield className="w-5 h-5 text-primary" />
-                        <CardTitle className="text-lg">Dr Pilot</CardTitle>
-                      </div>
-                      <CardDescription>Informações técnicas</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3 text-sm text-muted-foreground">
-                        <div>
-                          <p className="font-medium">Última atualização:</p>
-                          <p>{formatDate(profile.updated_at)}</p>
-                        </div>
-                        <div>
-                          <p className="font-medium">Versão:</p>
-                          <p>1.0.0</p>
-                        </div>
-                        <div className="pt-4">
-                          <p className="text-xs">
-                            Precisa de ajuda?{" "}
-                            <a 
-                              href="mailto:suporte@drpilot.com" 
-                              className="text-primary hover:underline"
-                            >
-                              Contate o suporte
-                            </a>
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card> */}
-                </div>
-              </div>
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
-
-          {/* Popup do ProfileForm - AGORA NO NÍVEL DA PÁGINA */}
-          <AnimatePresence>
-            {showProfilePopup && (
-              <>
-                {/* Overlay */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  onClick={() => setShowProfilePopup(false)}
-                  className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50"
-                />
-                
-                {/* Modal */}
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                  transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                  className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                >
-                  <div className="relative w-full max-w-2xl max-h-[85vh] overflow-y-auto bg-background rounded-2xl border border-primary shadow-2xl">
-                    {/* Botão de fechar */}
-                    <button
-                      onClick={() => setShowProfilePopup(false)}
-                      className="absolute top-4 right-4 p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors z-10"
-                      aria-label="Fechar"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                    
-                    {/* Conteúdo do ProfileForm */}
-                    <div className="p-6">
-                        
-                      <ProfileForm profile={profile} onUpdate={handleUpdate} />
-                    </div>
-                  </div>
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
-
-          {/* Popup do AccountInfo - AGORA NO NÍVEL DA PÁGINA */}
-          <AnimatePresence>
-            {showAccountPopup && (
-              <>
-                {/* Overlay */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  onClick={() => setShowAccountPopup(false)}
-                  className="fixed inset-0 bg-background/80 backdrop-blur-sm z-50"
-                />
-                
-                {/* Modal */}
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                  transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                  className="fixed inset-0 z-50 flex items-center justify-center p-4"
-                >
-                  <div className="relative w-full max-w-2xl max-h-[85vh] overflow-y-auto bg-background rounded-2xl border border-primary shadow-2xl">
-                    {/* Botão de fechar */}
-                    <button
-                      onClick={() => setShowAccountPopup(false)}
-                      className="absolute top-4 right-4 p-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors z-10"
-                      aria-label="Fechar"
-                    >
-                      <X className="w-5 h-5" />
-                    </button>
-                    
-                    {/* Conteúdo do AccountInfo */}
-                    <div className="p-6">
-                      <div className="mb-6">
-                        <h2 className="text-2xl font-bold text-foreground">Informações da Conta</h2>
-                        <p className="text-muted-foreground">Gerencie as configurações da sua conta</p>
-                      </div>
-                      <AccountInfo 
-                        profile={profile} 
-                        onPasswordChange={handlePasswordChange}
-                      />
-                    </div>
-                  </div>
-                </motion.div>
-              </>
-            )}
-                              <Card className="border-border/50 bg-card/40 backdrop-blur-sm shadow-lg">
-  <CardHeader className="pb-4">
-    <div className="flex flex-col items-center justify-center gap-2">
-      <Shield className="w-5 h-5 text-primary" />
-      <CardTitle className="text-lg text-center">Dr Pilot</CardTitle>
-    </div>
-    <CardDescription className="text-center">Informações técnicas</CardDescription>
-  </CardHeader>
-  <CardContent>
-    <div className="space-y-3 text-sm text-muted-foreground">
-      <div className="text-center">
-        <p className="font-medium">Última atualização:</p>
-        <p>{formatDate(profile.updated_at)}</p>
-      </div>
-      <div className="text-center">
-        <p className="font-medium">Versão:</p>
-        <p>1.0.0</p>
-      </div>
-      <div className="pt-4 text-center">
-        <p className="text-xs">
-          Precisa de ajuda?{" "}
-          <a 
-            href="mailto:suporte@drpilot.com" 
-            className="text-primary hover:underline"
-          >
-            Contate o suporte
-          </a>
-        </p>
-      </div>
-    </div>
-  </CardContent>
-</Card>
-          </AnimatePresence>
         </div>
       </PageLayout>
     </ProtectedRoute>
   )
-}
-
-// Helper function
-function formatDate(dateString: string) {
-  try {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  } catch {
-    return "Data inválida"
-  }
 }

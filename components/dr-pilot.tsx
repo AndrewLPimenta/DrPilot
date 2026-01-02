@@ -23,7 +23,7 @@ import {
   ArrowDown,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-
+import { HeartbeatBackground } from "./ui/heartbeat-background";
 
 
 interface Message {
@@ -135,16 +135,16 @@ export default function DrPilot() {
         endpoint === "/query"
           ? { query: message }
           : endpoint === "/analyze-symptoms"
-          ? { symptoms: message.split(",").map((s) => s.trim()), ...extraData }
-          : endpoint === "/study-topic"
-          ? { topic: message, ...extraData }
-          : endpoint === "/exam-review"
-          ? { subjects: message.split(",").map((s) => s.trim()), ...extraData }
-          : endpoint === "/pharmacology"
-          ? { query: message, ...extraData }
-          : endpoint === "/osce"
-          ? { station: message, ...extraData }
-          : { query: message };
+            ? { symptoms: message.split(",").map((s) => s.trim()), ...extraData }
+            : endpoint === "/study-topic"
+              ? { topic: message, ...extraData }
+              : endpoint === "/exam-review"
+                ? { subjects: message.split(",").map((s) => s.trim()), ...extraData }
+                : endpoint === "/pharmacology"
+                  ? { query: message, ...extraData }
+                  : endpoint === "/osce"
+                    ? { station: message, ...extraData }
+                    : { query: message };
 
       const response = await fetch(`${baseUrl}/api/ai${endpoint}`, {
         method: "POST",
@@ -177,11 +177,22 @@ export default function DrPilot() {
     }
   };
 
-  const handleQuickAction = (action: QuickActionProps) => {
-    setActiveEndpoint(action.endpoint);
+ const handleQuickAction = (action: QuickActionProps) => {
+  setActiveEndpoint((prev) => {
+    // se clicar no mesmo → desmarca
+    if (prev === action.endpoint) {
+      setMessage("");
+      return null;
+    }
+
+    // se clicar em outro → troca
     setMessage(`Quero usar a funcionalidade de ${action.label.toLowerCase()}: `);
-    textareaRef.current?.focus();
-  };
+    return action.endpoint;
+  });
+
+  textareaRef.current?.focus();
+};
+
 
   const quickActions: QuickActionProps[] = [
     { icon: <Stethoscope className="w-5 h-5" />, label: "Análise de Sintomas", endpoint: "/analyze-symptoms" },
@@ -236,13 +247,15 @@ export default function DrPilot() {
   return (
     <div className="relative w-full  flex flex-col items-center bg-black">
       {/* Background image + overlay (kept exactly as requested) */}
-      <div className="fixed inset-0 bg-cover bg-center overflow-hidden" style={{ backgroundImage: "url('https://pub-940ccf6255b54fa799a9b01050e6c227.r2.dev/ruixen_moon_2.png')", backgroundAttachment: "fixed", filter: "grayscale(100%) brightness(0.5) contrast(1.9)", }} />
-      <div className="absolute inset-0 bg-black/30 -z-20" />
+      <div className="fixed inset-0 bg-cover bg-center overflow-hidden" >
+        <HeartbeatBackground />
+      </div>
+      <div className="absolute inset-0 bg-transparent -z-20" />
 
       {/* Header (kept commented for now but improved structure if enabled) */}
       {/* <header className="relative w-full bg-black/30 backdrop-blur-sm border-b border-white/5 z-10">...</header> */}
 
-      <main className="relative flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 flex flex-col">
+      <main className="relative flex-1 w-full max-w-6xl mx-auto px-4 sm:px-6 py-6 flex flex-col bg-transparent">
         <div className="flex-1 w-full flex flex-col lg:flex-row gap-6">
           {/* Left / Main column */}
           <section className="flex-1 flex flex-col gap-4">
@@ -262,15 +275,33 @@ export default function DrPilot() {
 
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-4xl">
                         {quickActions.map((action) => (
-                          <Card key={action.endpoint} className="bg-background/6 backdrop-blur-sm border border-white/8 hover:bg-background/8 transition-all cursor-pointer p-4" onClick={() => handleQuickAction(action)}>
+                          <Card
+                            key={action.endpoint}
+                            onClick={() => handleQuickAction(action)}
+                            className="
+    bg-transparent
+    backdrop-blur-sm
+    border border-white/20
+    transition-all
+    cursor-pointer
+    p-4
+  "
+                          >
                             <div className="flex items-center gap-3">
-                              <div className="p-2.5 bg-primary/30 rounded-lg flex-shrink-0">{action.icon}</div>
+                              <div className="p-2.5 bg-primary/30 rounded-lg flex-shrink-0">
+                                {action.icon}
+                              </div>
                               <div className="flex-1 min-w-0">
-                                <h3 className="font-semibold text-white text-sm truncate">{action.label}</h3>
-                                <p className="text-xs text-white/60 mt-1 truncate">Clique para usar</p>
+                                <h3 className="font-semibold text-white text-sm truncate">
+                                  {action.label}
+                                </h3>
+                                <p className="text-xs text-white/60 mt-1 truncate">
+                                  Clique para usar
+                                </p>
                               </div>
                             </div>
                           </Card>
+
                         ))}
                       </div>
                     </div>

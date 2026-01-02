@@ -5,7 +5,6 @@ import { Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { useAuth } from "@/contexts/auth-context";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Link from "next/link";
-import { useRouter } from 'next/navigation';
 // --- HELPER COMPONENTS (ICONS) ---
 
 const GoogleIcon = () => (
@@ -16,8 +15,6 @@ const GoogleIcon = () => (
     <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571l6.19 5.238C42.022 35.026 44 30.038 44 24c0-2.641-.21-5.236-.611-7.743z" />
   </svg>
 );
-
-// --- TYPE DEFINITIONS ---
 
 export interface Testimonial {
   avatarSrc: string;
@@ -35,8 +32,6 @@ interface SignInPageProps {
   onResetPassword?: () => void;
   onCreateAccount?: () => void;
 }
-
-// --- SUB-COMPONENTS ---
 
 const GlassInputWrapper = ({ children }: { children: React.ReactNode }) => (
   <div className="rounded-2xl border border-border bg-foreground/5 backdrop-blur-sm transition-colors focus-within:border-violet-400/70 focus-within:bg-violet-500/10">
@@ -85,7 +80,6 @@ export const SignInPage: React.FC<SignInPageProps> = ({
 
   return (
     <div className="h-[100dvh] flex flex-col md:flex-row font-geist w-[100dvw]">
-      {/* Left column: sign-in form */}
       <section className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md">
           <div className="flex flex-col gap-6">
@@ -111,7 +105,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={loading}
                     required
-                    className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed text-base md:text-sm"
+                    className="no-zoom w-full bg-transparent p-4 rounded-2xl focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </GlassInputWrapper>
               </div>
@@ -128,7 +122,7 @@ export const SignInPage: React.FC<SignInPageProps> = ({
                       onChange={(e) => setPassword(e.target.value)}
                       disabled={loading}
                       required
-className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed text-base md:text-sm" 
+                      className="no-zoom w-full bg-transparent p-4 rounded-2xl focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                     />
                     <button
                       type="button"
